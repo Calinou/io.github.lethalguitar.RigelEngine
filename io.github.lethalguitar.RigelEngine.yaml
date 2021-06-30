@@ -1,0 +1,76 @@
+app-id: io.github.lethalguitar.RigelEngine
+runtime: org.freedesktop.Platform
+sdk: org.freedesktop.Sdk
+runtime-version: "20.08"
+command: rigelengine
+finish-args:
+  - --device=dri
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=x11
+  - --share=ipc
+  - --socket=pulseaudio
+cleanup:
+  - /app/include
+  - /app/lib/*.a
+  - /app/lib/*.la
+  - /app/lib/pkgconfig
+
+modules:
+
+  - name: boost
+    buildsystem: simple
+    cleanup:
+      - /include
+      - /lib/libboost_*.a
+    build-commands:
+      - ./bootstrap.sh --with-libraries=program_options
+      - ./b2 install variant=release link=static runtime-link=static --prefix=/app -j $FLATPAK_BUILDER_N_JOBS
+    sources:
+      - type: archive
+        url: https://downloads.sourceforge.net/project/boost/boost/1.76.0/boost_1_76_0.tar.bz2
+        sha256: f0397ba6e982c4450f27bf32a2a83292aba035b827a5623a14636ea583318c41
+
+  - name: rigelengine
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      - -DBoost_USE_STATIC_RUNTIME=ON
+    build-commands:
+      # CMake doesn't install the program binary, so do it manually.
+      - install -Dm755 src/RigelEngine /app/bin/rigelengine
+    sources:
+      - type: git
+        url: https://github.com/lethal-guitar/RigelEngine.git
+        tag: v0.7.1-beta
+        commit: 5511365e2a8ca4c9b09063f427e7bf1a66af9521
+
+# - name: freedoom1
+#   buildsystem: simple
+#   sources:
+#   - type: archive
+#     url: https://github.com/freedoom/freedoom/releases/download/v0.12.0/freedoom-0.12.0.zip
+#     sha256: 5722aa8c157ca49e445a30dd22837d53c32754956715ef6febf385489a816fde
+#   - type: file
+#     url: https://raw.githubusercontent.com/freedoom/freedoom/v0.12.0/dist/freedoom1.desktop
+#     sha256: e3f79848f4517fe02dca17ebb767bdfa53b600832c347bd62d6a30ed9a7c35a4
+#   - type: file
+#     url: https://raw.githubusercontent.com/freedoom/freedoom/v0.12.0/dist/freedoom1.appdata.xml
+#     sha256: bdb0e08886306e5777eddb21fd93ae99125e57152f8b6a7f83f4e6e1cece1f58
+#   - type: file
+#     path: playa2a8-48x48.png
+#   - type: file
+#     path: playa2a8-64x64.png
+#   - type: file
+#     path: playa2a8-128x128.png
+#   build-commands:
+#   - install -Dm 644 freedoom1.wad /app/share/games/doom
+#   - desktop-file-edit --set-key=Exec --set-value=gzdoom.sh freedoom1.desktop
+#   - install -Dm 644 freedoom1.desktop -t /app/share/applications
+#   - install -Dm 644 freedoom1.appdata.xml -t /app/share/appdata
+#   - sed -e 's|</description>|<p>This package uses the GZDoom source port.</p></description>|' -i /app/share/appdata/freedoom1.appdata.xml
+#   - sed -e 's|</component>|<releases><release version="0.12.0" date="2017-07-18"></release></releases></component>|' -i /app/share/appdata/freedoom1.appdata.xml
+#   - sed -e 's|</component>|<content_rating type="oars-1.1"><content_attribute id="violence-bloodshed">intense</content_attribute></content_rating></component>|' -i /app/share/appdata/freedoom1.appdata.xml
+#   - install -Dm 644 playa2a8-48x48.png /app/share/icons/hicolor/48x48/apps/freedoom1.png
+#   - install -Dm 644 playa2a8-64x64.png /app/share/icons/hicolor/64x64/apps/freedoom1.png
+#   - install -Dm 644 playa2a8-128x128.png /app/share/icons/hicolor/128x128/apps/freedoom1.png
